@@ -1,0 +1,54 @@
+version: "3"
+services:
+  node-express-docker:
+    environment:
+      - PORT=4000
+      - NODE_ENV=development
+      - MONGO_DB_USER=admin_mongodb_service
+      - MONGO_DB_PW=password
+      - MONGO_DB_HOST=mongodb
+      - MONGO_DB_PORT=27017
+      - JWT_KEY=jwt_secret_key
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./:/usr/app
+    container_name: node-express-docker
+    expose:
+      - "4000"
+    ports:
+      - "4000:4000"
+    command: node backend/server.js
+    depends_on:
+      - mongodb
+    networks:
+      - mongodb-network
+    links:
+      - mongodb
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - 27018:27018
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin_mongodb_service
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - mongodb-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+volumes:
+  mongodb-data:
+    name: mongodb-data
+networks:
+  mongodb-network:
+    name: mongodb-network
